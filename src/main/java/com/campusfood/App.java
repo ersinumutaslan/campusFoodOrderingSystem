@@ -4,19 +4,17 @@ import java.math.BigDecimal;
 
 public class App {
     public static void main(String[] args) throws Exception {
-        // Why not double for money?
-        System.out.println("double:     0.1 + 0.2 = " + (0.1 + 0.2));
-        System.out.println("BigDecimal: 0.1 + 0.2 = " + new BigDecimal("0.1").add(new BigDecimal("0.2")));
-
         Product wrap = new Product("Chicken Wrap", new BigDecimal("85.50"));
-        System.out.println("Product: " + wrap);
-        System.out.println("Available? " + wrap.isAvailable());
+        Product ayran = new Product("Ayran", new BigDecimal("20.00"));
 
-        wrap.setAvailable(false);
-        System.out.println("Available after sold out? " + wrap.isAvailable());
+        OrderItem item1 = new OrderItem(wrap, 2);
+        OrderItem item2 = new OrderItem(ayran, 3);
+
+        System.out.println(item1);
+        System.out.println(item2);
 
         try {
-            new Product("Free Lunch", new BigDecimal("-5"));
+            new OrderItem(wrap, 0);
         } catch (IllegalArgumentException e) {
             System.out.println("Rejected: " + e.getMessage());
         }
