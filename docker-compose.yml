@@ -1,0 +1,18 @@
+# Local development database. Start with: docker compose up -d
+services:
+  postgres:
+    image: postgres:18
+    container_name: campusfood-postgres
+    environment:
+      # Development-only credentials; never use these in production
+      POSTGRES_DB: campusfood
+      POSTGRES_USER: campusfood
+      POSTGRES_PASSWORD: campusfood
+    ports:
+      # 5433 on the Mac, because a locally installed PostgreSQL already uses 5432
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql
+
+volumes:
+  postgres-data:
