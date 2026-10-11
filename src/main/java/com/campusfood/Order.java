@@ -5,15 +5,43 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/** A student's order: several items and a status. */
+/** A student's order from one restaurant: several items and a status. */
 public class Order {
 
+    private final User customer;
+    private final Restaurant restaurant;
     private final List<OrderItem> items = new ArrayList<>();
     private OrderStatus status = OrderStatus.PLACED;
+
+    public Order(User customer, Restaurant restaurant) {
+        if (customer == null) {
+            throw new IllegalArgumentException("Customer must not be null");
+        }
+        if (restaurant == null) {
+            throw new IllegalArgumentException("Restaurant must not be null");
+        }
+        this.customer = customer;
+        this.restaurant = restaurant;
+    }
+
+    public User getCustomer() {
+        return customer;
+    }
+
+    public Restaurant getRestaurant() {
+        return restaurant;
+    }
 
     public void addItem(OrderItem item) {
         if (item == null) {
             throw new IllegalArgumentException("Item must not be null");
+        }
+        Product product = item.getProduct();
+        if (!restaurant.getMenu().contains(product)) {
+            throw new IllegalArgumentException(product.getName() + " is not on the menu of " + restaurant.getName());
+        }
+        if (!product.isAvailable()) {
+            throw new IllegalArgumentException(product.getName() + " is not available");
         }
         items.add(item);
     }

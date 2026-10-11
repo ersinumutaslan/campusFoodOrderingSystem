@@ -25,17 +25,25 @@ public class App {
         }
 
         // 4. The student places an order
-        Order order = new Order();
+        Order order = new Order(student, grill);
         order.addItem(new OrderItem(wrap, 2));
         order.addItem(new OrderItem(ayran, 1));
 
         System.out.println();
-        System.out.println("=== Order by " + student.getName() + " ===");
+        System.out.println("=== Order by " + order.getCustomer().getName()
+                + " at " + order.getRestaurant().getName() + " ===");
         for (OrderItem item : order.getItems()) {
             System.out.println("  " + item);
         }
         System.out.println("  Total: " + order.getTotal() + " TL");
         System.out.println("  Status: " + order.getStatus());
+
+        // The student tries to add the sold-out soup
+        try {
+            order.addItem(new OrderItem(soup, 1));
+        } catch (IllegalArgumentException e) {
+            System.out.println("  Rejected: " + e.getMessage());
+        }
 
         // 5. Staff process the order; a student is not allowed to
         System.out.println();
