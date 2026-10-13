@@ -16,6 +16,13 @@
     </properties>
 
     <dependencies>
+        <!-- PostgreSQL JDBC driver: lets Java connect to PostgreSQL -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>42.7.7</version>
+        </dependency>
+
         <!-- JUnit 5: only needed to compile and run tests, not in the final app -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
