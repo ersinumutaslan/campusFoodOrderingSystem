@@ -19,4 +19,11 @@ public class RestaurantRepository {
                 .query(RestaurantResponse.class)
                 .list();
     }
+
+    public boolean existsById(long id) {
+        return jdbcClient.sql("SELECT EXISTS (SELECT 1 FROM restaurants WHERE id = ?)")
+                .param(id)
+                .query(Boolean.class)
+                .single();
+    }
 }
