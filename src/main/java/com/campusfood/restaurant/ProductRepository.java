@@ -1,28 +1,11 @@
 package com.campusfood.restaurant;
 
 import java.util.List;
-import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.stereotype.Repository;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-/** Reads products from the database. */
-@Repository
-public class ProductRepository {
+/** Database access for products. Spring Data JPA generates the implementation. */
+public interface ProductRepository extends JpaRepository<Product, Long> {
 
-    private final JdbcClient jdbcClient;
-
-    public ProductRepository(JdbcClient jdbcClient) {
-        this.jdbcClient = jdbcClient;
-    }
-
-    public List<ProductResponse> findAvailableByRestaurantId(long restaurantId) {
-        return jdbcClient.sql("""
-                        SELECT id, name, price
-                        FROM products
-                        WHERE restaurant_id = ? AND available = TRUE
-                        ORDER BY name
-                        """)
-                .param(restaurantId)
-                .query(ProductResponse.class)
-                .list();
-    }
+    /** SELECT ... FROM products WHERE restaurant_id = ? AND available = TRUE ORDER BY name */
+    List<Product> findByRestaurantIdAndAvailableTrueOrderByNameAsc(Long restaurantId);
 }

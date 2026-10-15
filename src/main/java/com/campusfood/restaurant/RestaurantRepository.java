@@ -1,29 +1,7 @@
 package com.campusfood.restaurant;
 
-import java.util.List;
-import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.stereotype.Repository;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-/** Reads restaurants from the database. The only class that knows the SQL for restaurants. */
-@Repository
-public class RestaurantRepository {
-
-    private final JdbcClient jdbcClient;
-
-    public RestaurantRepository(JdbcClient jdbcClient) {
-        this.jdbcClient = jdbcClient;
-    }
-
-    public List<RestaurantResponse> findAll() {
-        return jdbcClient.sql("SELECT id, name FROM restaurants ORDER BY id")
-                .query(RestaurantResponse.class)
-                .list();
-    }
-
-    public boolean existsById(long id) {
-        return jdbcClient.sql("SELECT EXISTS (SELECT 1 FROM restaurants WHERE id = ?)")
-                .param(id)
-                .query(Boolean.class)
-                .single();
-    }
+/** Database access for restaurants. Spring Data JPA generates the implementation. */
+public interface RestaurantRepository extends JpaRepository<Restaurant, Long> {
 }

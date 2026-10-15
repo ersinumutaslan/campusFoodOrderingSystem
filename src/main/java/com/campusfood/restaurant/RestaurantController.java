@@ -1,6 +1,7 @@
 package com.campusfood.restaurant;
 
 import java.util.List;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,7 +22,9 @@ public class RestaurantController {
 
     @GetMapping("/restaurants")
     public List<RestaurantResponse> getRestaurants() {
-        return restaurantRepository.findAll();
+        return restaurantRepository.findAll(Sort.by("id")).stream()
+                .map(RestaurantResponse::from)
+                .toList();
     }
 
     @GetMapping("/restaurants/{id}/products")
@@ -29,6 +32,8 @@ public class RestaurantController {
         if (!restaurantRepository.existsById(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Restaurant " + id + " not found");
         }
-        return productRepository.findAvailableByRestaurantId(id);
+        return productRepository.findByRestaurantIdAndAvailableTrueOrderByNameAsc(id).stream()
+                .map(ProductResponse::from)
+                .toList();
     }
 }
