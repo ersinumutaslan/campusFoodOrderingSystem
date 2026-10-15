@@ -1,4 +1,4 @@
-package com.campusfood;
+package com.campusfood.user;
 
 /** What a user is allowed to do in the system. */
 public enum Role {

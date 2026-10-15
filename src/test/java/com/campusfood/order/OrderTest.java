@@ -1,4 +1,4 @@
-package com.campusfood;
+package com.campusfood.order;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -6,6 +6,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import com.campusfood.restaurant.Product;
+import com.campusfood.restaurant.Restaurant;
+import com.campusfood.user.Role;
+import com.campusfood.user.User;
 
 class OrderTest {
 

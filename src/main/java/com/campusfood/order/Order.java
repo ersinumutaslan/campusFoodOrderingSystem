@@ -1,9 +1,13 @@
-package com.campusfood;
+package com.campusfood.order;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import com.campusfood.restaurant.Product;
+import com.campusfood.restaurant.Restaurant;
+import com.campusfood.user.User;
 
 /** A student's order from one restaurant: several items and a status. */
 public class Order {

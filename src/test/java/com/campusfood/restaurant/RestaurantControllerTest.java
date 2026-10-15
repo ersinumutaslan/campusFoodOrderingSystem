@@ -1,4 +1,4 @@
-package com.campusfood;
+package com.campusfood.restaurant;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;

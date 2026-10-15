@@ -1,4 +1,4 @@
-package com.campusfood;
+package com.campusfood.demo;
 
 import java.math.BigDecimal;
 import java.sql.Connection;

@@ -1,4 +1,4 @@
-package com.campusfood;
+package com.campusfood.order;
 
 /** The stages an order goes through, from placement to pickup. */
 public enum OrderStatus {

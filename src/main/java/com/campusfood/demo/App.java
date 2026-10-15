@@ -1,6 +1,14 @@
-package com.campusfood;
+package com.campusfood.demo;
 
 import java.math.BigDecimal;
+
+import com.campusfood.order.Order;
+import com.campusfood.order.OrderItem;
+import com.campusfood.order.OrderStatus;
+import com.campusfood.restaurant.Product;
+import com.campusfood.restaurant.Restaurant;
+import com.campusfood.user.Role;
+import com.campusfood.user.User;
 
 public class App {
     public static void main(String[] args) throws Exception {

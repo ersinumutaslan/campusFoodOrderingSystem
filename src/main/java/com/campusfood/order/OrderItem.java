@@ -1,6 +1,8 @@
-package com.campusfood;
+package com.campusfood.order;
 
 import java.math.BigDecimal;
+
+import com.campusfood.restaurant.Product;
 
 /** One line of an order: a product and how many of it. */
 public class OrderItem {

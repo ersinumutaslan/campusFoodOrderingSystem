@@ -1,4 +1,4 @@
-package com.campusfood;
+package com.campusfood.user;
 
 /** A person using the system: a student, restaurant staff member, or admin. */
 public class User {

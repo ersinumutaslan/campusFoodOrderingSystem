@@ -10,13 +10,23 @@ Portfolio project for learning backend engineering with Java and Spring Boot.
 
 - Java 25
 - Maven 3.9+
+- Docker (for the PostgreSQL database)
 
-## Build and run
+## Run
 
 ```bash
-mvn compile
-java -cp target/classes com.campusfood.App
+docker compose up -d       # start PostgreSQL on port 5433
+mvn spring-boot:run        # start the API on http://localhost:8080
 ```
+
+Flyway creates the tables and sample data on first start.
+
+## Endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/restaurants` | List all restaurants |
+| GET | `/restaurants/{id}/products` | Available menu of one restaurant (404 if unknown) |
 
 ## Run tests
 

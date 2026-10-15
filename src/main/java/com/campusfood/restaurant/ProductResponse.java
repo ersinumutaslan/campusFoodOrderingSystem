@@ -1,4 +1,4 @@
-package com.campusfood;
+package com.campusfood.restaurant;
 
 import java.math.BigDecimal;
 
