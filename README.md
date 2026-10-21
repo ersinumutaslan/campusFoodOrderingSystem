@@ -29,6 +29,7 @@ Flyway creates the tables and sample data on first start.
 | GET | `/restaurants/{id}/products` | Available menu of one restaurant (404 if unknown) |
 | POST | `/orders` | Place an order (201; 400 for invalid data or broken rules, 404 for unknown ids) |
 | GET | `/orders/{id}` | One order with its items and total (404 if unknown) |
+| PATCH | `/orders/{id}/status` | Move an order to a new status, e.g. `{"status": "PREPARING"}` (409 if the change is not allowed) |
 
 ## Run tests
 

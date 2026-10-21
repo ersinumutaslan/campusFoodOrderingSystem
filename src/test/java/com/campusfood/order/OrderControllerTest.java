@@ -1,10 +1,12 @@
 package com.campusfood.order;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -95,6 +97,36 @@ class OrderControllerTest {
 
         mockMvc.perform(get("/orders/99"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void patchStatusReturns200WithTheUpdatedOrder() throws Exception {
+        when(orderService.updateStatus(1L, OrderStatus.PREPARING)).thenReturn(new OrderResponse(
+                1L, "Ayşe Yılmaz", "Campus Grill", OrderStatus.PREPARING,
+                List.of(), BigDecimal.ZERO, Instant.now()));
+
+        mockMvc.perform(patch("/orders/1/status").contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"status\": \"PREPARING\" }"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("PREPARING"));
+    }
+
+    @Test
+    void unknownStatusValueReturns400() throws Exception {
+        mockMvc.perform(patch("/orders/1/status").contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"status\": \"DELIVERED\" }"))
+                .andExpect(status().isBadRequest());
+        verify(orderService, never()).updateStatus(anyLong(), any());
+    }
+
+    @Test
+    void notAllowedStatusChangeReturns409() throws Exception {
+        when(orderService.updateStatus(1L, OrderStatus.COMPLETED)).thenThrow(new ResponseStatusException(
+                HttpStatus.CONFLICT, "Cannot change order status from PLACED to COMPLETED"));
+
+        mockMvc.perform(patch("/orders/1/status").contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"status\": \"COMPLETED\" }"))
+                .andExpect(status().isConflict());
     }
 
     @Test

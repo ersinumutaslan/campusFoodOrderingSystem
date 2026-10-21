@@ -102,11 +102,14 @@ public class Order {
         return status;
     }
 
-    public void setStatus(OrderStatus status) {
-        if (status == null) {
+    public void changeStatus(OrderStatus newStatus) {
+        if (newStatus == null) {
             throw new IllegalArgumentException("Status must not be null");
         }
-        this.status = status;
+        if (!status.canChangeTo(newStatus)) {
+            throw new IllegalStateException("Cannot change order status from " + status + " to " + newStatus);
+        }
+        this.status = newStatus;
     }
 
     public BigDecimal getTotal() {

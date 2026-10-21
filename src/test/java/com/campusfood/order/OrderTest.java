@@ -79,6 +79,44 @@ class OrderTest {
     }
 
     @Test
+    void statusMovesForwardThroughTheKitchen() {
+        Order order = new Order(student, grill);
+
+        order.changeStatus(OrderStatus.PREPARING);
+        order.changeStatus(OrderStatus.READY);
+        order.changeStatus(OrderStatus.COMPLETED);
+
+        assertEquals(OrderStatus.COMPLETED, order.getStatus());
+    }
+
+    @Test
+    void completedOrderCannotGoBackToPreparing() {
+        Order order = new Order(student, grill);
+        order.changeStatus(OrderStatus.PREPARING);
+        order.changeStatus(OrderStatus.READY);
+        order.changeStatus(OrderStatus.COMPLETED);
+
+        assertThrows(IllegalStateException.class, () -> order.changeStatus(OrderStatus.PREPARING));
+        assertEquals(OrderStatus.COMPLETED, order.getStatus());
+    }
+
+    @Test
+    void placedOrderCannotSkipToReady() {
+        Order order = new Order(student, grill);
+
+        assertThrows(IllegalStateException.class, () -> order.changeStatus(OrderStatus.READY));
+    }
+
+    @Test
+    void readyOrderCannotBeCancelled() {
+        Order order = new Order(student, grill);
+        order.changeStatus(OrderStatus.PREPARING);
+        order.changeStatus(OrderStatus.READY);
+
+        assertThrows(IllegalStateException.class, () -> order.changeStatus(OrderStatus.CANCELLED));
+    }
+
+    @Test
     void orderWithoutCustomerIsRejected() {
         assertThrows(IllegalArgumentException.class, () -> new Order(null, grill));
     }

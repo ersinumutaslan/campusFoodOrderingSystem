@@ -66,7 +66,7 @@ public class App {
             System.out.println(user.getName() + " (" + user.getRole() + ") cannot change order status");
             return;
         }
-        order.setStatus(newStatus);
+        order.changeStatus(newStatus);
         System.out.println(user.getName() + " set order to " + order.getStatus());
     }
 }

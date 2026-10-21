@@ -114,6 +114,28 @@ class OrderServiceTest {
     }
 
     @Test
+    void updateStatusChangesTheStatus() {
+        Order order = new Order(student, grill);
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        OrderResponse response = orderService.updateStatus(1L, OrderStatus.PREPARING);
+
+        assertEquals(OrderStatus.PREPARING, response.status());
+    }
+
+    @Test
+    void notAllowedStatusChangeIsRejectedWith409() {
+        Order order = new Order(student, grill);
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        ResponseStatusException e = assertThrows(ResponseStatusException.class, () ->
+                orderService.updateStatus(1L, OrderStatus.COMPLETED));
+
+        assertEquals(HttpStatus.CONFLICT, e.getStatusCode());
+        assertEquals(OrderStatus.PLACED, order.getStatus());
+    }
+
+    @Test
     void emptyOrderIsRejectedWith400() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(student));
         when(restaurantRepository.findById(1L)).thenReturn(Optional.of(grill));

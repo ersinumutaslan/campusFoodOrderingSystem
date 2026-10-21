@@ -62,6 +62,20 @@ public class OrderService {
         return OrderResponse.from(order);
     }
 
+    @Transactional
+    public OrderResponse updateStatus(long id, OrderStatus newStatus) {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> notFound("Order", id));
+        try {
+            order.changeStatus(newStatus);
+        } catch (IllegalStateException e) {
+            // The change is not allowed from the order's current status
+            throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage());
+        }
+        // No save() needed: JPA writes changes to loaded entities when the transaction commits
+        return OrderResponse.from(order);
+    }
+
     private static ResponseStatusException notFound(String what, Long id) {
         return new ResponseStatusException(HttpStatus.NOT_FOUND, what + " " + id + " not found");
     }
