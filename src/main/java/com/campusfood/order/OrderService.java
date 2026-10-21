@@ -55,6 +55,13 @@ public class OrderService {
         return OrderResponse.from(saved);
     }
 
+    @Transactional(readOnly = true)
+    public OrderResponse getOrder(long id) {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> notFound("Order", id));
+        return OrderResponse.from(order);
+    }
+
     private static ResponseStatusException notFound(String what, Long id) {
         return new ResponseStatusException(HttpStatus.NOT_FOUND, what + " " + id + " not found");
     }

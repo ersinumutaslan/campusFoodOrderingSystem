@@ -4,6 +4,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -72,6 +73,28 @@ class OrderControllerTest {
         mockMvc.perform(post("/orders").contentType(MediaType.APPLICATION_JSON).content(json))
                 .andExpect(status().isBadRequest());
         verify(orderService, never()).placeOrder(any());
+    }
+
+    @Test
+    void getOrderReturns200WithTheOrder() throws Exception {
+        when(orderService.getOrder(1L)).thenReturn(new OrderResponse(
+                1L, "Ayşe Yılmaz", "Campus Grill", OrderStatus.READY,
+                List.of(new OrderItemResponse("Chicken Wrap", 2, new BigDecimal("85.50"), new BigDecimal("171.00"))),
+                new BigDecimal("171.00"), Instant.now()));
+
+        mockMvc.perform(get("/orders/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.status").value("READY"));
+    }
+
+    @Test
+    void getUnknownOrderReturns404() throws Exception {
+        when(orderService.getOrder(99L))
+                .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Order 99 not found"));
+
+        mockMvc.perform(get("/orders/99"))
+                .andExpect(status().isNotFound());
     }
 
     @Test

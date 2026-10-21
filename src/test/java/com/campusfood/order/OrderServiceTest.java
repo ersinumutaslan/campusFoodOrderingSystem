@@ -93,6 +93,27 @@ class OrderServiceTest {
     }
 
     @Test
+    void getOrderReturnsTheOrder() {
+        Order order = new Order(student, grill);
+        order.addItem(new OrderItem(wrap, 2));
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        OrderResponse response = orderService.getOrder(1L);
+
+        assertEquals("Campus Grill", response.restaurant());
+        assertEquals(new BigDecimal("171.00"), response.total());
+    }
+
+    @Test
+    void getUnknownOrderIsRejectedWith404() {
+        when(orderRepository.findById(99L)).thenReturn(Optional.empty());
+
+        ResponseStatusException e = assertThrows(ResponseStatusException.class, () -> orderService.getOrder(99L));
+
+        assertEquals(HttpStatus.NOT_FOUND, e.getStatusCode());
+    }
+
+    @Test
     void emptyOrderIsRejectedWith400() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(student));
         when(restaurantRepository.findById(1L)).thenReturn(Optional.of(grill));
