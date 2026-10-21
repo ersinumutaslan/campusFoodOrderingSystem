@@ -38,3 +38,5 @@ Interactive API docs (Swagger UI): http://localhost:8080/swagger-ui.html
 ```bash
 mvn test
 ```
+
+Docker must be running: the integration tests use Testcontainers to start a throwaway PostgreSQL.
