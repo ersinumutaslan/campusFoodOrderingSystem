@@ -23,6 +23,9 @@ public class User {
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    /** BCrypt hash of the password (never the password itself). */
+    private String passwordHash;
+
     /** Used by JPA to create objects from database rows. */
     protected User() {
     }
@@ -56,6 +59,10 @@ public class User {
 
     public Role getRole() {
         return role;
+    }
+
+    public String getPasswordHash() {
+        return passwordHash;
     }
 
     @Override

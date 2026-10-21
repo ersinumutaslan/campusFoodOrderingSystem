@@ -21,6 +21,20 @@ mvn spring-boot:run        # start the API on http://localhost:8080
 
 Flyway creates the tables and sample data on first start.
 
+## Login
+
+Requests log in with email + password (HTTP Basic). In Swagger UI, use the **Authorize** button.
+
+Sample users (local development only, created by the Flyway migrations), all with the password `campus123`:
+
+| Email | Role |
+|---|---|
+| ayse@campus.edu | STUDENT |
+| mehmet@campus.edu | STAFF |
+| zeynep@campus.edu | ADMIN |
+
+Browsing restaurants and menus needs no login. Placing an order needs STUDENT; changing an order's status needs STAFF.
+
 ## Endpoints
 
 Interactive API docs (Swagger UI): http://localhost:8080/swagger-ui.html

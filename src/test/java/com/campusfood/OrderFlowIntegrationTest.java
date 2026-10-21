@@ -1,6 +1,7 @@
 package com.campusfood;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -16,6 +17,7 @@ import org.springframework.boot.testcontainers.service.connection.ServiceConnect
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
@@ -32,6 +34,10 @@ class OrderFlowIntegrationTest {
     @Container
     @ServiceConnection
     static PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18");
+
+    /** Sample users from the Flyway migrations (V6 + V7), logging in for real with email + password. */
+    private static final RequestPostProcessor STUDENT = httpBasic("ayse@campus.edu", "campus123");
+    private static final RequestPostProcessor STAFF = httpBasic("mehmet@campus.edu", "campus123");
 
     @Autowired
     private MockMvc mockMvc;
@@ -68,24 +74,24 @@ class OrderFlowIntegrationTest {
                 }
                 """;
 
-        String created = mockMvc.perform(post("/orders").contentType(MediaType.APPLICATION_JSON).content(orderJson))
+        String created = mockMvc.perform(post("/orders").with(STUDENT).contentType(MediaType.APPLICATION_JSON).content(orderJson))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.total").value(191.00))
                 .andReturn().getResponse().getContentAsString();
         int id = JsonPath.read(created, "$.id");
 
-        mockMvc.perform(get("/orders/" + id))
+        mockMvc.perform(get("/orders/" + id).with(STUDENT))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.customer").value("Ayşe Yılmaz"))
                 .andExpect(jsonPath("$.status").value("PLACED"))
                 .andExpect(jsonPath("$.items.length()").value(2))
                 .andExpect(jsonPath("$.total").value(191.00));
 
-        mockMvc.perform(patch("/orders/" + id + "/status")
+        mockMvc.perform(patch("/orders/" + id + "/status").with(STAFF)
                         .contentType(MediaType.APPLICATION_JSON).content("{ \"status\": \"PREPARING\" }"))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(get("/orders/" + id))
+        mockMvc.perform(get("/orders/" + id).with(STUDENT))
                 .andExpect(jsonPath("$.status").value("PREPARING"));
     }
 
@@ -96,7 +102,7 @@ class OrderFlowIntegrationTest {
                 { "customerId": 1, "restaurantId": 1, "items": [ { "productId": 3, "quantity": 1 } ] }
                 """;
 
-        mockMvc.perform(post("/orders").contentType(MediaType.APPLICATION_JSON).content(soldOutSoup))
+        mockMvc.perform(post("/orders").with(STUDENT).contentType(MediaType.APPLICATION_JSON).content(soldOutSoup))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.detail").value("Lentil Soup is not available"));
 
@@ -109,8 +115,21 @@ class OrderFlowIntegrationTest {
                 { "customerId": 1, "restaurantId": 1, "items": [ { "productId": 4, "quantity": 1 } ] }
                 """;
 
-        mockMvc.perform(post("/orders").contentType(MediaType.APPLICATION_JSON).content(pizzaAtGrill))
+        mockMvc.perform(post("/orders").with(STUDENT).contentType(MediaType.APPLICATION_JSON).content(pizzaAtGrill))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.detail").value("Margherita is not on the menu of Campus Grill"));
+    }
+
+    @Test
+    void wrongPasswordIsRejected() throws Exception {
+        mockMvc.perform(get("/orders/1").with(httpBasic("ayse@campus.edu", "wrong-password")))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void studentCannotMoveOrdersThroughTheKitchen() throws Exception {
+        mockMvc.perform(patch("/orders/1/status").with(STUDENT)
+                        .contentType(MediaType.APPLICATION_JSON).content("{ \"status\": \"PREPARING\" }"))
+                .andExpect(status().isForbidden());
     }
 }
