@@ -62,7 +62,9 @@ class OrderControllerTest {
                 """;
 
         mockMvc.perform(post("/orders").contentType(MediaType.APPLICATION_JSON).content(json))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("Validation failed"))
+                .andExpect(jsonPath("$.errors.customerId").value("must not be null"));
         verify(orderService, never()).placeOrder(any());
     }
 
@@ -73,7 +75,8 @@ class OrderControllerTest {
                 """;
 
         mockMvc.perform(post("/orders").contentType(MediaType.APPLICATION_JSON).content(json))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors['items[0].quantity']").value("must be at least 1"));
         verify(orderService, never()).placeOrder(any());
     }
 
@@ -126,7 +129,10 @@ class OrderControllerTest {
 
         mockMvc.perform(patch("/orders/1/status").contentType(MediaType.APPLICATION_JSON)
                         .content("{ \"status\": \"COMPLETED\" }"))
-                .andExpect(status().isConflict());
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.title").value("Conflict"))
+                .andExpect(jsonPath("$.detail").value("Cannot change order status from PLACED to COMPLETED"));
     }
 
     @Test
