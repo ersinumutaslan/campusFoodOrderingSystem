@@ -1,6 +1,8 @@
 package com.campusfood.order;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -48,6 +50,28 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.status").value("PLACED"))
                 .andExpect(jsonPath("$.items[0].product").value("Chicken Wrap"))
                 .andExpect(jsonPath("$.total").value(171.00));
+    }
+
+    @Test
+    void missingCustomerIdReturns400() throws Exception {
+        String json = """
+                { "restaurantId": 1, "items": [ { "productId": 1, "quantity": 2 } ] }
+                """;
+
+        mockMvc.perform(post("/orders").contentType(MediaType.APPLICATION_JSON).content(json))
+                .andExpect(status().isBadRequest());
+        verify(orderService, never()).placeOrder(any());
+    }
+
+    @Test
+    void zeroQuantityReturns400() throws Exception {
+        String json = """
+                { "customerId": 1, "restaurantId": 1, "items": [ { "productId": 1, "quantity": 0 } ] }
+                """;
+
+        mockMvc.perform(post("/orders").contentType(MediaType.APPLICATION_JSON).content(json))
+                .andExpect(status().isBadRequest());
+        verify(orderService, never()).placeOrder(any());
     }
 
     @Test

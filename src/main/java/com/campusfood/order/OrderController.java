@@ -1,5 +1,6 @@
 package com.campusfood.order;
 
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -18,7 +19,7 @@ public class OrderController {
 
     @PostMapping("/orders")
     @ResponseStatus(HttpStatus.CREATED)
-    public OrderResponse placeOrder(@RequestBody OrderRequest request) {
+    public OrderResponse placeOrder(@Valid @RequestBody OrderRequest request) {
         return orderService.placeOrder(request);
     }
 }
