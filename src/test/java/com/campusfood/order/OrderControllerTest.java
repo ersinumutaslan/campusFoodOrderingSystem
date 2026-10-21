@@ -2,6 +2,7 @@ package com.campusfood.order;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -30,9 +31,11 @@ import org.springframework.web.server.ResponseStatusException;
 @Import(SecurityConfig.class)
 class OrderControllerTest {
 
+    private static final String AYSE = "ayse@campus.edu";
+    private static final String MEHMET = "mehmet@campus.edu";
+
     private static final String ORDER_JSON = """
             {
-              "customerId": 1,
               "restaurantId": 1,
               "items": [ { "productId": 1, "quantity": 2 } ]
             }
@@ -45,9 +48,9 @@ class OrderControllerTest {
     private OrderService orderService;
 
     @Test
-    @WithMockUser(roles = "STUDENT")
+    @WithMockUser(username = AYSE, roles = "STUDENT")
     void placingAnOrderReturns201WithTheOrder() throws Exception {
-        when(orderService.placeOrder(any())).thenReturn(new OrderResponse(
+        when(orderService.placeOrder(eq(AYSE), any())).thenReturn(new OrderResponse(
                 4L, "Ayşe Yılmaz", "Campus Grill", OrderStatus.PLACED,
                 List.of(new OrderItemResponse("Chicken Wrap", 2, new BigDecimal("85.50"), new BigDecimal("171.00"))),
                 new BigDecimal("171.00"), Instant.now()));
@@ -61,36 +64,36 @@ class OrderControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "STUDENT")
-    void missingCustomerIdReturns400() throws Exception {
+    @WithMockUser(username = AYSE, roles = "STUDENT")
+    void missingRestaurantIdReturns400() throws Exception {
         String json = """
-                { "restaurantId": 1, "items": [ { "productId": 1, "quantity": 2 } ] }
+                { "items": [ { "productId": 1, "quantity": 2 } ] }
                 """;
 
         mockMvc.perform(post("/orders").contentType(MediaType.APPLICATION_JSON).content(json))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.detail").value("Validation failed"))
-                .andExpect(jsonPath("$.errors.customerId").value("must not be null"));
-        verify(orderService, never()).placeOrder(any());
+                .andExpect(jsonPath("$.errors.restaurantId").value("must not be null"));
+        verify(orderService, never()).placeOrder(any(), any());
     }
 
     @Test
-    @WithMockUser(roles = "STUDENT")
+    @WithMockUser(username = AYSE, roles = "STUDENT")
     void zeroQuantityReturns400() throws Exception {
         String json = """
-                { "customerId": 1, "restaurantId": 1, "items": [ { "productId": 1, "quantity": 0 } ] }
+                { "restaurantId": 1, "items": [ { "productId": 1, "quantity": 0 } ] }
                 """;
 
         mockMvc.perform(post("/orders").contentType(MediaType.APPLICATION_JSON).content(json))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errors['items[0].quantity']").value("must be at least 1"));
-        verify(orderService, never()).placeOrder(any());
+        verify(orderService, never()).placeOrder(any(), any());
     }
 
     @Test
-    @WithMockUser(roles = "STUDENT")
+    @WithMockUser(username = AYSE, roles = "STUDENT")
     void getOrderReturns200WithTheOrder() throws Exception {
-        when(orderService.getOrder(1L)).thenReturn(new OrderResponse(
+        when(orderService.getOrder(1L, AYSE, false)).thenReturn(new OrderResponse(
                 1L, "Ayşe Yılmaz", "Campus Grill", OrderStatus.READY,
                 List.of(new OrderItemResponse("Chicken Wrap", 2, new BigDecimal("85.50"), new BigDecimal("171.00"))),
                 new BigDecimal("171.00"), Instant.now()));
@@ -102,9 +105,9 @@ class OrderControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "STUDENT")
+    @WithMockUser(username = AYSE, roles = "STUDENT")
     void getUnknownOrderReturns404() throws Exception {
-        when(orderService.getOrder(99L))
+        when(orderService.getOrder(99L, AYSE, false))
                 .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Order 99 not found"));
 
         mockMvc.perform(get("/orders/99"))
@@ -112,7 +115,7 @@ class OrderControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "STAFF")
+    @WithMockUser(username = MEHMET, roles = "STAFF")
     void patchStatusReturns200WithTheUpdatedOrder() throws Exception {
         when(orderService.updateStatus(1L, OrderStatus.PREPARING)).thenReturn(new OrderResponse(
                 1L, "Ayşe Yılmaz", "Campus Grill", OrderStatus.PREPARING,
@@ -125,7 +128,7 @@ class OrderControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "STAFF")
+    @WithMockUser(username = MEHMET, roles = "STAFF")
     void unknownStatusValueReturns400() throws Exception {
         mockMvc.perform(patch("/orders/1/status").contentType(MediaType.APPLICATION_JSON)
                         .content("{ \"status\": \"DELIVERED\" }"))
@@ -134,7 +137,7 @@ class OrderControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "STAFF")
+    @WithMockUser(username = MEHMET, roles = "STAFF")
     void notAllowedStatusChangeReturns409() throws Exception {
         when(orderService.updateStatus(1L, OrderStatus.COMPLETED)).thenThrow(new ResponseStatusException(
                 HttpStatus.CONFLICT, "Cannot change order status from PLACED to COMPLETED"));
@@ -148,9 +151,9 @@ class OrderControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "STUDENT")
+    @WithMockUser(username = AYSE, roles = "STUDENT")
     void unknownRestaurantReturns404() throws Exception {
-        when(orderService.placeOrder(any()))
+        when(orderService.placeOrder(eq(AYSE), any()))
                 .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Restaurant 1 not found"));
 
         mockMvc.perform(post("/orders").contentType(MediaType.APPLICATION_JSON).content(ORDER_JSON))
@@ -161,22 +164,45 @@ class OrderControllerTest {
     void placingAnOrderWithoutLoginReturns401() throws Exception {
         mockMvc.perform(post("/orders").contentType(MediaType.APPLICATION_JSON).content(ORDER_JSON))
                 .andExpect(status().isUnauthorized());
-        verify(orderService, never()).placeOrder(any());
+        verify(orderService, never()).placeOrder(any(), any());
     }
 
     @Test
-    @WithMockUser(roles = "STAFF")
+    @WithMockUser(username = MEHMET, roles = "STAFF")
     void staffCannotPlaceOrders() throws Exception {
         mockMvc.perform(post("/orders").contentType(MediaType.APPLICATION_JSON).content(ORDER_JSON))
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    @WithMockUser(roles = "STUDENT")
+    @WithMockUser(username = AYSE, roles = "STUDENT")
     void studentCannotChangeOrderStatus() throws Exception {
         mockMvc.perform(patch("/orders/1/status").contentType(MediaType.APPLICATION_JSON)
                         .content("{ \"status\": \"COMPLETED\" }"))
                 .andExpect(status().isForbidden());
         verify(orderService, never()).updateStatus(anyLong(), any());
+    }
+
+    @Test
+    @WithMockUser(username = MEHMET, roles = "STAFF")
+    void staffLooksAtOrdersWithPermissionToSeeAll() throws Exception {
+        when(orderService.getOrder(1L, MEHMET, true)).thenReturn(new OrderResponse(
+                1L, "Ayşe Yılmaz", "Campus Grill", OrderStatus.READY, List.of(), BigDecimal.ZERO, Instant.now()));
+
+        mockMvc.perform(get("/orders/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.customer").value("Ayşe Yılmaz"));
+    }
+
+    @Test
+    @WithMockUser(username = AYSE, roles = "STUDENT")
+    void myOrdersReturnsTheLoggedInUsersOrders() throws Exception {
+        when(orderService.getMyOrders(AYSE)).thenReturn(List.of(new OrderResponse(
+                1L, "Ayşe Yılmaz", "Campus Grill", OrderStatus.READY, List.of(), BigDecimal.ZERO, Instant.now())));
+
+        mockMvc.perform(get("/orders/mine"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].customer").value("Ayşe Yılmaz"));
     }
 }

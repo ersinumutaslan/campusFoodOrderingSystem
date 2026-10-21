@@ -28,6 +28,8 @@ import org.springframework.web.server.ResponseStatusException;
 @ExtendWith(MockitoExtension.class)
 class OrderServiceTest {
 
+    private static final String AYSE = "ayse@campus.edu";
+
     @Mock private OrderRepository orderRepository;
     @Mock private UserRepository userRepository;
     @Mock private RestaurantRepository restaurantRepository;
@@ -52,13 +54,13 @@ class OrderServiceTest {
 
     @Test
     void placesOrderAndReturnsTotal() {
-        when(userRepository.findById(1L)).thenReturn(Optional.of(student));
+        when(userRepository.findByEmail(AYSE)).thenReturn(Optional.of(student));
         when(restaurantRepository.findById(1L)).thenReturn(Optional.of(grill));
         when(productRepository.findById(1L)).thenReturn(Optional.of(wrap));
         when(productRepository.findById(2L)).thenReturn(Optional.of(ayran));
         when(orderRepository.save(any(Order.class))).thenAnswer(call -> call.getArgument(0));
 
-        OrderResponse response = orderService.placeOrder(new OrderRequest(1L, 1L, List.of(
+        OrderResponse response = orderService.placeOrder(AYSE, new OrderRequest(1L, List.of(
                 new OrderItemRequest(1L, 2),
                 new OrderItemRequest(2L, 1))));
 
@@ -71,12 +73,12 @@ class OrderServiceTest {
     @Test
     void productFromAnotherRestaurantIsRejectedWith400() {
         Product pizza = new Product("Margherita", new BigDecimal("150.00"));
-        when(userRepository.findById(1L)).thenReturn(Optional.of(student));
+        when(userRepository.findByEmail(AYSE)).thenReturn(Optional.of(student));
         when(restaurantRepository.findById(1L)).thenReturn(Optional.of(grill));
         when(productRepository.findById(4L)).thenReturn(Optional.of(pizza));
 
         ResponseStatusException e = assertThrows(ResponseStatusException.class, () ->
-                orderService.placeOrder(new OrderRequest(1L, 1L, List.of(new OrderItemRequest(4L, 1)))));
+                orderService.placeOrder(AYSE, new OrderRequest(1L, List.of(new OrderItemRequest(4L, 1)))));
 
         assertEquals(HttpStatus.BAD_REQUEST, e.getStatusCode());
         verify(orderRepository, never()).save(any());
@@ -84,10 +86,10 @@ class OrderServiceTest {
 
     @Test
     void unknownCustomerIsRejectedWith404() {
-        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+        when(userRepository.findByEmail("ghost@campus.edu")).thenReturn(Optional.empty());
 
         ResponseStatusException e = assertThrows(ResponseStatusException.class, () ->
-                orderService.placeOrder(new OrderRequest(99L, 1L, List.of(new OrderItemRequest(1L, 1)))));
+                orderService.placeOrder("ghost@campus.edu", new OrderRequest(1L, List.of(new OrderItemRequest(1L, 1)))));
 
         assertEquals(HttpStatus.NOT_FOUND, e.getStatusCode());
     }
@@ -98,7 +100,7 @@ class OrderServiceTest {
         order.addItem(new OrderItem(wrap, 2));
         when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
 
-        OrderResponse response = orderService.getOrder(1L);
+        OrderResponse response = orderService.getOrder(1L, AYSE, false);
 
         assertEquals("Campus Grill", response.restaurant());
         assertEquals(new BigDecimal("171.00"), response.total());
@@ -108,7 +110,7 @@ class OrderServiceTest {
     void getUnknownOrderIsRejectedWith404() {
         when(orderRepository.findById(99L)).thenReturn(Optional.empty());
 
-        ResponseStatusException e = assertThrows(ResponseStatusException.class, () -> orderService.getOrder(99L));
+        ResponseStatusException e = assertThrows(ResponseStatusException.class, () -> orderService.getOrder(99L, AYSE, false));
 
         assertEquals(HttpStatus.NOT_FOUND, e.getStatusCode());
     }
@@ -137,12 +139,44 @@ class OrderServiceTest {
 
     @Test
     void emptyOrderIsRejectedWith400() {
-        when(userRepository.findById(1L)).thenReturn(Optional.of(student));
+        when(userRepository.findByEmail(AYSE)).thenReturn(Optional.of(student));
         when(restaurantRepository.findById(1L)).thenReturn(Optional.of(grill));
 
         ResponseStatusException e = assertThrows(ResponseStatusException.class, () ->
-                orderService.placeOrder(new OrderRequest(1L, 1L, List.of())));
+                orderService.placeOrder(AYSE, new OrderRequest(1L, List.of())));
 
         assertEquals(HttpStatus.BAD_REQUEST, e.getStatusCode());
+    }
+
+    @Test
+    void studentCannotSeeSomeoneElsesOrder() {
+        Order order = new Order(student, grill);
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        ResponseStatusException e = assertThrows(ResponseStatusException.class, () ->
+                orderService.getOrder(1L, "ali@campus.edu", false));
+
+        assertEquals(HttpStatus.FORBIDDEN, e.getStatusCode());
+    }
+
+    @Test
+    void staffCanSeeAnyOrder() {
+        Order order = new Order(student, grill);
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        OrderResponse response = orderService.getOrder(1L, "mehmet@campus.edu", true);
+
+        assertEquals("Ayşe Yılmaz", response.customer());
+    }
+
+    @Test
+    void myOrdersAreTheOnesOfTheLoggedInUser() {
+        when(orderRepository.findByCustomerEmailOrderByCreatedAtDesc(AYSE))
+                .thenReturn(List.of(new Order(student, grill)));
+
+        List<OrderResponse> mine = orderService.getMyOrders(AYSE);
+
+        assertEquals(1, mine.size());
+        assertEquals("Ayşe Yılmaz", mine.get(0).customer());
     }
 }

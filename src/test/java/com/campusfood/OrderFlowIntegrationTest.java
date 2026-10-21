@@ -1,5 +1,8 @@
 package com.campusfood;
 
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.everyItem;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -38,6 +41,10 @@ class OrderFlowIntegrationTest {
     /** Sample users from the Flyway migrations (V6 + V7), logging in for real with email + password. */
     private static final RequestPostProcessor STUDENT = httpBasic("ayse@campus.edu", "campus123");
     private static final RequestPostProcessor STAFF = httpBasic("mehmet@campus.edu", "campus123");
+    private static final RequestPostProcessor ALI = httpBasic("ali@campus.edu", "campus123");
+
+    /** Ali's order from V8 (V6 created orders 1-3). */
+    private static final long ALIS_ORDER_ID = 4;
 
     @Autowired
     private MockMvc mockMvc;
@@ -68,7 +75,6 @@ class OrderFlowIntegrationTest {
     void placeOrderReadItBackAndMoveItThroughTheKitchen() throws Exception {
         String orderJson = """
                 {
-                  "customerId": 1,
                   "restaurantId": 1,
                   "items": [ { "productId": 1, "quantity": 2 }, { "productId": 2, "quantity": 1 } ]
                 }
@@ -99,7 +105,7 @@ class OrderFlowIntegrationTest {
     void rejectedOrderIsNotSaved() throws Exception {
         long ordersBefore = orderRepository.count();
         String soldOutSoup = """
-                { "customerId": 1, "restaurantId": 1, "items": [ { "productId": 3, "quantity": 1 } ] }
+                { "restaurantId": 1, "items": [ { "productId": 3, "quantity": 1 } ] }
                 """;
 
         mockMvc.perform(post("/orders").with(STUDENT).contentType(MediaType.APPLICATION_JSON).content(soldOutSoup))
@@ -112,7 +118,7 @@ class OrderFlowIntegrationTest {
     @Test
     void productFromAnotherRestaurantIsRejected() throws Exception {
         String pizzaAtGrill = """
-                { "customerId": 1, "restaurantId": 1, "items": [ { "productId": 4, "quantity": 1 } ] }
+                { "restaurantId": 1, "items": [ { "productId": 4, "quantity": 1 } ] }
                 """;
 
         mockMvc.perform(post("/orders").with(STUDENT).contentType(MediaType.APPLICATION_JSON).content(pizzaAtGrill))
@@ -131,5 +137,39 @@ class OrderFlowIntegrationTest {
         mockMvc.perform(patch("/orders/1/status").with(STUDENT)
                         .contentType(MediaType.APPLICATION_JSON).content("{ \"status\": \"PREPARING\" }"))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void studentCannotOpenSomeoneElsesOrder() throws Exception {
+        mockMvc.perform(get("/orders/" + ALIS_ORDER_ID).with(STUDENT))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.detail").value("You can only see your own orders"));
+    }
+
+    @Test
+    void staffCanOpenAnyOrder() throws Exception {
+        mockMvc.perform(get("/orders/" + ALIS_ORDER_ID).with(STAFF))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.customer").value("Ali Kaya"));
+    }
+
+    @Test
+    void myOrdersShowsOnlyTheLoggedInStudentsOrders() throws Exception {
+        mockMvc.perform(get("/orders/mine").with(ALI))
+                .andExpect(status().isOk())
+                // Other tests may add orders for Ali too, so check that every order is his, not an exact count
+                .andExpect(jsonPath("$.length()").value(greaterThanOrEqualTo(1)))
+                .andExpect(jsonPath("$[*].customer").value(everyItem(equalTo("Ali Kaya"))));
+    }
+
+    @Test
+    void orderIsPlacedForTheLoggedInStudent() throws Exception {
+        String json = """
+                { "restaurantId": 2, "items": [ { "productId": 4, "quantity": 1 } ] }
+                """;
+
+        mockMvc.perform(post("/orders").with(ALI).contentType(MediaType.APPLICATION_JSON).content(json))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.customer").value("Ali Kaya"));
     }
 }

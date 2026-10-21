@@ -30,6 +30,7 @@ Sample users (local development only, created by the Flyway migrations), all wit
 | Email | Role |
 |---|---|
 | ayse@campus.edu | STUDENT |
+| ali@campus.edu | STUDENT |
 | mehmet@campus.edu | STAFF |
 | zeynep@campus.edu | ADMIN |
 
@@ -43,8 +44,9 @@ Interactive API docs (Swagger UI): http://localhost:8080/swagger-ui.html
 |---|---|---|
 | GET | `/restaurants` | List all restaurants |
 | GET | `/restaurants/{id}/products` | Available menu of one restaurant (404 if unknown) |
-| POST | `/orders` | Place an order (201; 400 for invalid data or broken rules, 404 for unknown ids) |
-| GET | `/orders/{id}` | One order with its items and total (404 if unknown) |
+| POST | `/orders` | Place an order for the logged-in student (201; 400 for invalid data or broken rules, 404 for unknown ids) |
+| GET | `/orders/mine` | The logged-in user's orders, newest first |
+| GET | `/orders/{id}` | One order with its items and total; students only their own (403), staff and admins any |
 | PATCH | `/orders/{id}/status` | Move an order to a new status, e.g. `{"status": "PREPARING"}` (409 if the change is not allowed) |
 
 ## Run tests

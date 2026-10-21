@@ -6,6 +6,7 @@ import com.campusfood.restaurant.Restaurant;
 import com.campusfood.restaurant.RestaurantRepository;
 import com.campusfood.user.User;
 import com.campusfood.user.UserRepository;
+import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,10 +29,11 @@ public class OrderService {
         this.productRepository = productRepository;
     }
 
+    /** Places an order for the logged-in user (identified by their login email). */
     @Transactional
-    public OrderResponse placeOrder(OrderRequest request) {
-        User customer = userRepository.findById(request.customerId())
-                .orElseThrow(() -> notFound("Customer", request.customerId()));
+    public OrderResponse placeOrder(String customerEmail, OrderRequest request) {
+        User customer = userRepository.findByEmail(customerEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User " + customerEmail + " not found"));
         Restaurant restaurant = restaurantRepository.findById(request.restaurantId())
                 .orElseThrow(() -> notFound("Restaurant", request.restaurantId()));
 
@@ -55,11 +57,23 @@ public class OrderService {
         return OrderResponse.from(saved);
     }
 
+    /** One order. Students may only see their own; staff and admins may see any (canSeeAllOrders). */
     @Transactional(readOnly = true)
-    public OrderResponse getOrder(long id) {
+    public OrderResponse getOrder(long id, String viewerEmail, boolean canSeeAllOrders) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> notFound("Order", id));
+        if (!canSeeAllOrders && !order.getCustomer().getEmail().equals(viewerEmail)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only see your own orders");
+        }
         return OrderResponse.from(order);
+    }
+
+    /** All orders of the logged-in user, newest first. */
+    @Transactional(readOnly = true)
+    public List<OrderResponse> getMyOrders(String customerEmail) {
+        return orderRepository.findByCustomerEmailOrderByCreatedAtDesc(customerEmail).stream()
+                .map(OrderResponse::from)
+                .toList();
     }
 
     @Transactional
