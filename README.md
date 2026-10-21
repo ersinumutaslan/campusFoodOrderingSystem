@@ -23,6 +23,8 @@ Flyway creates the tables and sample data on first start.
 
 ## Endpoints
 
+Interactive API docs (Swagger UI): http://localhost:8080/swagger-ui.html
+
 | Method | Path | Description |
 |---|---|---|
 | GET | `/restaurants` | List all restaurants |

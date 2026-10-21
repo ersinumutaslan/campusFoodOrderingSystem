@@ -37,6 +37,13 @@
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
+        <!-- OpenAPI docs + Swagger UI at /swagger-ui.html (not managed by Spring Boot, so it needs a version) -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>3.1.1</version>
+        </dependency>
+
         <!-- Spring Data JPA (with Hibernate): maps Java classes to tables and writes the SQL -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
