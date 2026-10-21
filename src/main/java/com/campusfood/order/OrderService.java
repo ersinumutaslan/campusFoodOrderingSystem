@@ -1,0 +1,61 @@
+package com.campusfood.order;
+
+import com.campusfood.restaurant.Product;
+import com.campusfood.restaurant.ProductRepository;
+import com.campusfood.restaurant.Restaurant;
+import com.campusfood.restaurant.RestaurantRepository;
+import com.campusfood.user.User;
+import com.campusfood.user.UserRepository;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
+/** Places orders: loads the data, applies the domain rules and saves everything in one transaction. */
+@Service
+public class OrderService {
+
+    private final OrderRepository orderRepository;
+    private final UserRepository userRepository;
+    private final RestaurantRepository restaurantRepository;
+    private final ProductRepository productRepository;
+
+    public OrderService(OrderRepository orderRepository, UserRepository userRepository,
+                        RestaurantRepository restaurantRepository, ProductRepository productRepository) {
+        this.orderRepository = orderRepository;
+        this.userRepository = userRepository;
+        this.restaurantRepository = restaurantRepository;
+        this.productRepository = productRepository;
+    }
+
+    @Transactional
+    public OrderResponse placeOrder(OrderRequest request) {
+        User customer = userRepository.findById(request.customerId())
+                .orElseThrow(() -> notFound("Customer", request.customerId()));
+        Restaurant restaurant = restaurantRepository.findById(request.restaurantId())
+                .orElseThrow(() -> notFound("Restaurant", request.restaurantId()));
+
+        if (request.items() == null || request.items().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Order must contain at least one item");
+        }
+
+        Order order = new Order(customer, restaurant);
+        for (OrderItemRequest itemRequest : request.items()) {
+            Product product = productRepository.findById(itemRequest.productId())
+                    .orElseThrow(() -> notFound("Product", itemRequest.productId()));
+            try {
+                order.addItem(new OrderItem(product, itemRequest.quantity()));
+            } catch (IllegalArgumentException e) {
+                // A domain rule was broken (not on the menu, sold out, quantity < 1)
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+            }
+        }
+
+        Order saved = orderRepository.save(order);
+        return OrderResponse.from(saved);
+    }
+
+    private static ResponseStatusException notFound(String what, Long id) {
+        return new ResponseStatusException(HttpStatus.NOT_FOUND, what + " " + id + " not found");
+    }
+}

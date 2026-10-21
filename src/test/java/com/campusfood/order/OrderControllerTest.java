@@ -1,0 +1,61 @@
+package com.campusfood.order;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.server.ResponseStatusException;
+
+@WebMvcTest(OrderController.class)
+class OrderControllerTest {
+
+    private static final String ORDER_JSON = """
+            {
+              "customerId": 1,
+              "restaurantId": 1,
+              "items": [ { "productId": 1, "quantity": 2 } ]
+            }
+            """;
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockitoBean
+    private OrderService orderService;
+
+    @Test
+    void placingAnOrderReturns201WithTheOrder() throws Exception {
+        when(orderService.placeOrder(any())).thenReturn(new OrderResponse(
+                4L, "Ayşe Yılmaz", "Campus Grill", OrderStatus.PLACED,
+                List.of(new OrderItemResponse("Chicken Wrap", 2, new BigDecimal("85.50"), new BigDecimal("171.00"))),
+                new BigDecimal("171.00"), Instant.now()));
+
+        mockMvc.perform(post("/orders").contentType(MediaType.APPLICATION_JSON).content(ORDER_JSON))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(4))
+                .andExpect(jsonPath("$.status").value("PLACED"))
+                .andExpect(jsonPath("$.items[0].product").value("Chicken Wrap"))
+                .andExpect(jsonPath("$.total").value(171.00));
+    }
+
+    @Test
+    void unknownRestaurantReturns404() throws Exception {
+        when(orderService.placeOrder(any()))
+                .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Restaurant 1 not found"));
+
+        mockMvc.perform(post("/orders").contentType(MediaType.APPLICATION_JSON).content(ORDER_JSON))
+                .andExpect(status().isNotFound());
+    }
+}
