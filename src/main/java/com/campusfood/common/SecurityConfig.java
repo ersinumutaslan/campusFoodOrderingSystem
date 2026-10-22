@@ -19,7 +19,7 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests(auth -> auth
                         // Public: browsing, API docs, error responses
-                        .requestMatchers(HttpMethod.GET, "/hello", "/restaurants/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/", "/hello", "/restaurants/**").permitAll()
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/error").permitAll()
                         // Only students place orders; only staff move orders through the kitchen
                         .requestMatchers(HttpMethod.POST, "/orders").hasRole("STUDENT")

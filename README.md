@@ -6,6 +6,10 @@ and restaurants.
 
 Portfolio project for learning backend engineering with Java and Spring Boot.
 
+**Live demo:** https://campusfoodorderingsystem.onrender.com (opens the interactive API docs).
+It runs on a free server that sleeps when unused, so the first visit can take about a minute.
+Log in with one of the demo users listed under [Login](#login).
+
 ## Requirements
 
 - Java 25
