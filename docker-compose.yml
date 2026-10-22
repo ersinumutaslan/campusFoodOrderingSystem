@@ -1,4 +1,6 @@
-# Local development database. Start with: docker compose up -d
+# Local development.
+#   Database only (for `mvn spring-boot:run`):  docker compose up -d
+#   Database + the app in Docker:               docker compose --profile app up -d --build
 services:
   postgres:
     image: postgres:18
@@ -13,6 +15,25 @@ services:
       - "5433:5432"
     volumes:
       - postgres-data:/var/lib/postgresql
+    healthcheck:
+      # "Ready" means PostgreSQL accepts connections; the app waits for this
+      test: ["CMD-SHELL", "pg_isready -U campusfood -d campusfood"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    profiles: ["app"]   # only started with --profile app
+    build: .            # built from the Dockerfile in this folder
+    container_name: campusfood-app
+    environment:
+      # Inside Docker, the database is reached by its service name "postgres" on its own port 5432
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/campusfood
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
 
 volumes:
   postgres-data:

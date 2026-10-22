@@ -1,0 +1,8 @@
+# Files Docker does not need when building the image
+target/
+.git/
+.github/
+.claude/
+.vscode/
+.idea/
+*.md

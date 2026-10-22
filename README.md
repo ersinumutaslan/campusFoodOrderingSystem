@@ -21,6 +21,13 @@ mvn spring-boot:run        # start the API on http://localhost:8080
 
 Flyway creates the tables and sample data on first start.
 
+### Run everything in Docker (no Java or Maven needed)
+
+```bash
+docker compose --profile app up -d --build   # build the app image, start database + app
+docker compose --profile app down            # stop both (data is kept)
+```
+
 ## Login
 
 Requests log in with email + password (HTTP Basic). In Swagger UI, use the **Authorize** button.
