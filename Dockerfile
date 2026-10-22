@@ -18,4 +18,5 @@ RUN groupadd --system app && useradd --system --gid app app
 COPY --from=build /app/target/campus-food-ordering-*.jar app.jar
 USER app
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Let Java use 75% of the container's memory (the default 25% is too little on small free servers)
+ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75", "-jar", "app.jar"]
